@@ -23,6 +23,11 @@ module Github
       list_issues_all
     end
 
+    def issue(organization, project, number)
+      target = "#{organization}/#{project}"
+      client.issue(target, number)
+    end
+
     def users(organization)
       client.organization_members(organization)
     rescue
