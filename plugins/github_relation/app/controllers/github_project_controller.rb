@@ -22,7 +22,7 @@ class GithubProjectController < ApplicationController
   end
 
   def create
-    @github_project = GithubProject.new(params[:github_relation])
+    @github_project = GithubProject.new(params[:github_project])
     @github_project.project_id = @project.id
 
     unless @github_project.save
@@ -33,7 +33,7 @@ class GithubProjectController < ApplicationController
   end
 
   def update
-    @github_project.attributes = params[:github_relation]
+    @github_project.attributes = params[:github_project]
     @github_project.project_id = @project.id
 
     unless @github_project.save

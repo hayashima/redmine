@@ -1,6 +1,9 @@
 class GithubProject < ActiveRecord::Base
   attr_accessible :organization, :project_name
 
+  validates :organization, presence: true
+  validates :project_name, presence: true
+
   belongs_to :project
 
   def get_from_github(login, password)

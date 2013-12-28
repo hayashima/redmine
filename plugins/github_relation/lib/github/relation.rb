@@ -25,6 +25,8 @@ module Github
 
     def users(organization)
       client.organization_members(organization)
+    rescue
+      []
     end
 
   end
