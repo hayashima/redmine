@@ -1,13 +1,13 @@
 class GithubIssue < ActiveRecord::Base
   attr_accessible :issue_number
 
+  has_many :github_issue_comments
   belongs_to :issue
 
   def self.create_issues(project, list_issues)
-    list_issues.each do |issue_from_github|
+    list_issues.select do |issue_from_github|
       github_issue = GithubIssue.where(issue_number: issue_from_github.number).first_or_create()
       github_issue.update_from_github(project, issue_from_github)
-      github_issue.save!
     end
   end
 
@@ -40,5 +40,16 @@ class GithubIssue < ActiveRecord::Base
     issue.save!
     Issue.set_callback(:save, :before, :force_updated_on_change)
     Issue.set_callback(:save, :before, :update_closed_on)
+    self.save!
+    true
+  end
+
+  def set_issue_comment_from_github(issue_comments)
+    issue_comments.each do |issue_comment_from_github|
+      issue_comment = github_issue_comments.where(issue_comment_number: issue_comment_from_github.id.to_s).first_or_create
+      issue_comment.github_issue = self
+      issue_comment.update_from_github(issue_comment_from_github)
+      issue_comment.save!
+    end
   end
 end
