@@ -11,16 +11,15 @@ module Github
     end
 
     def issues(organization, project)
-      target = "#{organization}/#{project}"
-      list_issues_all = []
-      page = 1
-      list_issues = client.list_issues(target, page: page, per_page: 100)
-      while list_issues != []
-        list_issues_all += list_issues
-        page += 1
-        list_issues = client.list_issues(target, page: page, per_page: 100)
+      all_list_from_github(organization, project) do |repo, option|
+        client.list_issues(repo, option)
       end
-      list_issues_all
+    end
+
+    def issue_comments(organization, project, number)
+      all_list_from_github(organization, project) do |repo, option|
+        client.issue_comments(repo, number, option)
+      end
     end
 
     def issue(organization, project, number)
@@ -34,5 +33,17 @@ module Github
       []
     end
 
+    private
+    def all_list_from_github(organization, project)
+      repo = "#{organization}/#{project}"
+
+      list_all = []
+      begin
+        page = (page || 0) + 1
+        list = yield repo, {page: page, per_page: 100}
+        list_all += list
+      end
+      list_all
+    end
   end
 end
