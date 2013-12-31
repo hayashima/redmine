@@ -2,6 +2,9 @@ class GithubIssue < ActiveRecord::Base
   attr_accessible :issue_number
 
   has_many :github_issue_comments
+  has_many :relation_to, :class_name => 'GithubIssueRelation', :foreign_key => 'issue_from_id'
+  has_many :relation_to_issues, :through => :relation_to, :source => 'issue_to'
+
   belongs_to :issue
 
   def self.create_issues(project, list_issues)
@@ -52,4 +55,25 @@ class GithubIssue < ActiveRecord::Base
       issue_comment.save!
     end
   end
+
+  def create_and_delete_relation_issues
+    relation_issues.reject{|issue| relation_to_issues.any? {|relation| relation == issue}}.each do |issue|
+      relation_to.create issue_to_id: issue.id
+    end
+
+    relation_to_issues.reject{|issue| relation_issues.any? {|relation| relation == issue}}.each do |issue|
+      relation_to.where(issue_to_id: issue.id).each do |to_issue|
+        to_issue.destroy
+      end
+    end
+  end
+
+  private
+  def relation_issues
+    issue_numbers = github_issue_comments.inject([]) do |numbers, github_issue|
+      numbers + github_issue.relation_issues
+    end
+    GithubIssue.where(issue_number: issue_numbers.uniq)
+  end
+
 end

@@ -10,4 +10,16 @@ class GithubIssueComment < ActiveRecord::Base
     new_journal.save!
     self.journal = new_journal
   end
+
+  def relation_issues
+    match_data = journal.notes.match /#(\d*)/
+
+    issue_ids = []
+    while match_data.present?
+      issue_ids << match_data[1].to_i
+      match_data = match_data.post_match.match /#(\d*)/
+    end
+
+    issue_ids
+  end
 end

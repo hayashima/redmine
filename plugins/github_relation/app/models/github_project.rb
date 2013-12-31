@@ -27,6 +27,7 @@ class GithubProject < ActiveRecord::Base
     (updated_issues + closed_issues).each do |issue|
       issue_comments = github_relation.issue_comments(self.organization, self.project_name, issue.issue_number)
       issue.set_issue_comment_from_github issue_comments
+      issue.create_and_delete_relation_issues
     end
   end
 end
