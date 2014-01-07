@@ -8,10 +8,12 @@ class GithubIssue < ActiveRecord::Base
   belongs_to :issue
 
   def self.create_issues(project, list_issues)
-    list_issues.select do |issue_from_github|
+    created_data = list_issues.select do |issue_from_github|
       github_issue = GithubIssue.where(issue_number: issue_from_github.number).first_or_create()
       github_issue.update_from_github(project, issue_from_github)
     end
+
+    GithubIssue.where(issue_number: created_data.map{|issue| issue.number})
   end
 
   def update_from_github(project, issue_from_github, status = :open)
@@ -45,6 +47,12 @@ class GithubIssue < ActiveRecord::Base
     Issue.set_callback(:save, :before, :update_closed_on)
     self.save!
     true
+  end
+
+  def self.closed_issues(list_issues)
+    github_issue_number = list_issues.map{|issue_from_github| issue_from_github.number}
+    GithubIssue.where(issue_id: self.project.issues.open.map{|issue| issue.id}).
+        where( GithubIssue.arel_table[:issue_number].not_in(github_issue_number))
   end
 
   def set_issue_comment_from_github(issue_comments)
