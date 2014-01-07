@@ -92,4 +92,29 @@ describe 'github_issue' do
     end
 
   end
+
+  describe "issue_comments" do
+    let!(:issue){GithubIssue.first}
+    before do
+      issue_comments = 10.times.map do |index|
+        comment = Hashie::Mash.new
+        comment.id = index
+        comment.body = "body#{index}"
+        comment
+      end
+
+      issue.set_issue_comment_from_github(issue_comments)
+    end
+
+    subject{GithubIssueComment.scoped.order(:id)}
+
+    its(:count){should == 10}
+    it "create_from_github" do
+      subject.each_with_index do |issue_comment, index|
+        issue_comment.issue_comment_number.should == index.to_s
+        issue_comment.github_issue.should == issue
+        issue_comment.journal.notes.should == "body#{index}"
+      end
+    end
+  end
 end

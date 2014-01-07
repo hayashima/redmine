@@ -5,7 +5,7 @@ class GithubIssueComment < ActiveRecord::Base
   belongs_to :journal
 
   def update_from_github(issue_comment)
-    new_journal = self.journal || github_issue.issue.init_journal(User.current)
+    new_journal = self.journal || Journal.new(:journalized => github_issue.issue, :user => User.current)
     new_journal.notes = issue_comment.body
     new_journal.save!
     self.journal = new_journal
