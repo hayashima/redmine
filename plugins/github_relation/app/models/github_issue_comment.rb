@@ -4,6 +4,8 @@ class GithubIssueComment < ActiveRecord::Base
   belongs_to :github_issue
   belongs_to :journal
 
+  after_destroy :destroy_issue_comment
+
   def update_from_github(issue_comment)
     new_journal = self.journal || Journal.new(:journalized => github_issue.issue, :user => User.current)
     new_journal.notes = issue_comment.body
@@ -22,4 +24,9 @@ class GithubIssueComment < ActiveRecord::Base
 
     issue_ids
   end
+
+  def destroy_issue_comment
+    self.journal.destroy
+  end
+
 end

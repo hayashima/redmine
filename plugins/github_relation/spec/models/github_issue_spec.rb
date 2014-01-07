@@ -108,12 +108,39 @@ describe 'github_issue' do
 
     subject{GithubIssueComment.scoped.order(:id)}
 
-    its(:count){should == 10}
-    it "create_from_github" do
-      subject.each_with_index do |issue_comment, index|
-        issue_comment.issue_comment_number.should == index.to_s
-        issue_comment.github_issue.should == issue
-        issue_comment.journal.notes.should == "body#{index}"
+    context "create_from_github" do
+      its(:count){should == 10}
+      it "github_comment" do
+        subject.each_with_index do |issue_comment, index|
+          issue_comment.issue_comment_number.should == index.to_s
+          issue_comment.github_issue.should == issue
+          issue_comment.journal.notes.should == "body#{index}"
+        end
+      end
+    end
+
+    context "update_and_delete_from_github" do
+      before do
+        issue_comments = 8.times.map do |index|
+          comment = Hashie::Mash.new
+          comment.id = index
+          comment.body = "body#{index + 1}"
+          comment
+        end
+
+        issue.set_issue_comment_from_github(issue_comments)
+      end
+
+      its(:count){should == 8}
+      it "journal" do
+        Journal.scoped.count.should == 8
+      end
+      it "github_comment" do
+        subject.each_with_index do |issue_comment, index|
+          issue_comment.issue_comment_number.should == index.to_s
+          issue_comment.github_issue.should == issue
+          issue_comment.journal.notes.should == "body#{index + 1}"
+        end
       end
     end
   end

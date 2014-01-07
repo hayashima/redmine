@@ -54,6 +54,12 @@ class GithubIssue < ActiveRecord::Base
       issue_comment.update_from_github(issue_comment_from_github)
       issue_comment.save!
     end
+
+    issue_comment_number = issue_comments.map {|issue_comment_from_github| issue_comment_from_github.id.to_s}
+    closed_issue_comments = github_issue_comments.where( GithubIssueComment.arel_table[:issue_comment_number].not_in(issue_comment_number))
+    closed_issue_comments.each do |issue_comment|
+      issue_comment.destroy
+    end
   end
 
   def create_and_delete_relation_issues
