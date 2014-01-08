@@ -99,11 +99,12 @@ describe 'github_issue' do
       issue_comments = 10.times.map do |index|
         comment = Hashie::Mash.new
         comment.id = index
-        comment.body = "body#{index}"
+        comment.body = "body#{index} #{index + 1} #{index + 2}"
         comment
       end
 
       issue.set_issue_comment_from_github(issue_comments)
+      issue.create_and_delete_relation_issues
     end
 
     subject{GithubIssueComment.scoped.order(:id)}
@@ -114,7 +115,18 @@ describe 'github_issue' do
         subject.each_with_index do |issue_comment, index|
           issue_comment.issue_comment_number.should == index.to_s
           issue_comment.github_issue.should == issue
-          issue_comment.journal.notes.should == "body#{index}"
+          issue_comment.journal.notes.should == "body#{index} #{index + 1} #{index + 2}"
+        end
+      end
+
+      it "github_relation" do
+        issue_relations = IssueRelation.all
+        issue_relations.count.should == 17
+
+        issue_relations.each_with_index do |issue_comment, index|
+          issue_comment.issue_comment_number.should == index.to_s
+          issue_comment.github_issue.should == issue
+          issue_comment.journal.notes.should == "body#{index} #{index + 1} #{index + 2}"
         end
       end
     end
