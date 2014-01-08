@@ -3,7 +3,6 @@ class GithubIssue < ActiveRecord::Base
 
   has_many :github_issue_comments
   has_many :relation_to, :class_name => 'GithubIssueRelation', :foreign_key => 'issue_from_id'
-  has_many :relation_to_issues, :through => :relation_to, :source => 'issue_to'
 
   belongs_to :issue
 
@@ -24,7 +23,7 @@ class GithubIssue < ActiveRecord::Base
     issue.description = issue_from_github.body
     issue.project = project
     issue.tracker = Tracker.first
-    issue.author = GithubUser.user_by_github_login(issue_from_github.user, User.first)
+    issue.author = GithubUser.user_by_github_login(issue_from_github.user)
     if issue_from_github.assignee.present?
       issue.assigned_to = GithubUser.user_by_github_login(issue_from_github.assignee)
     end
@@ -71,23 +70,26 @@ class GithubIssue < ActiveRecord::Base
   end
 
   def create_and_delete_relation_issues
-    relation_issues.reject{|issue| relation_to_issues.any? {|relation| relation == issue}}.each do |issue|
-      relation_to.create issue_to_id: issue.id
-    end
-
     relation_to_issues.reject{|issue| relation_issues.any? {|relation| relation == issue}}.each do |issue|
       relation_to.where(issue_to_id: issue.id).each do |to_issue|
         to_issue.destroy
       end
     end
+
+    relation_issues.reject{|issue| relation_to_issues.any? {|relation| relation == issue}}.each do |issue|
+      relation_to.create issue_to_id: issue.id
+    end
   end
 
   private
   def relation_issues
-    issue_numbers = github_issue_comments.inject([]) do |numbers, github_issue|
+    issue_numbers = github_issue_comments(true).inject([]) do |numbers, github_issue|
       numbers + github_issue.relation_issues
     end
     GithubIssue.where(issue_number: issue_numbers.uniq)
   end
 
+  def relation_to_issues
+    relation_to.map {|relation| relation.issue_to}
+  end
 end

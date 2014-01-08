@@ -15,6 +15,7 @@ class GithubIssueRelation < ActiveRecord::Base
     issue_relation.issue_to = issue_to.issue
     issue_relation.save!
     self.issue_relation = issue_relation
+    self.save!
   end
 
   def destroy_issue_relation

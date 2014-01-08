@@ -14,8 +14,6 @@ describe 'github_issue' do
   }
 
   before do
-    GithubUser.create_users(github_users)
-
     github_issues = 10.times.map do |index|
       issue = Hashie::Mash.new
       issue.number = index
@@ -58,7 +56,7 @@ describe 'github_issue' do
 
       subject[5].issue.author.should == user
       subject[5].issue.assigned_to.should == GithubUser.where(login: "assignee_login").first.user
-      subject[6].issue.author.should == User.first
+      subject[6].issue.author.should == GithubUser.where(login: "hoge").first.user
       subject[6].issue.assigned_to.should == nil
     end
   end
@@ -99,7 +97,7 @@ describe 'github_issue' do
       issue_comments = 10.times.map do |index|
         comment = Hashie::Mash.new
         comment.id = index
-        comment.body = "body#{index} #{index + 1} #{index + 2}"
+        comment.body = "body#{index} ##{index + 1} ##{index + 2}"
         comment
       end
 
@@ -115,43 +113,64 @@ describe 'github_issue' do
         subject.each_with_index do |issue_comment, index|
           issue_comment.issue_comment_number.should == index.to_s
           issue_comment.github_issue.should == issue
-          issue_comment.journal.notes.should == "body#{index} #{index + 1} #{index + 2}"
+          issue_comment.journal.notes.should == "body#{index} ##{index + 1} ##{index + 2}"
         end
       end
 
       it "github_relation" do
         issue_relations = IssueRelation.all
-        issue_relations.count.should == 17
+        issue_relations.count.should == 9
 
-        issue_relations.each_with_index do |issue_comment, index|
-          issue_comment.issue_comment_number.should == index.to_s
-          issue_comment.github_issue.should == issue
-          issue_comment.journal.notes.should == "body#{index} #{index + 1} #{index + 2}"
+        issue_relations.each_with_index do |issue_relation, index|
+          issue_relation.issue_from.should == issue.issue
+          issue_relation.issue_to.should == GithubIssue.where(issue_number: (index + 1).to_s).first.issue
         end
       end
     end
 
     context "update_and_delete_from_github" do
       before do
-        issue_comments = 8.times.map do |index|
+        issue_comments = 4.times.map do |index|
           comment = Hashie::Mash.new
           comment.id = index
           comment.body = "body#{index + 1}"
           comment
         end
+        issue_comments += 4.times.map do |index|
+          comment = Hashie::Mash.new
+          comment.id = index + 4
+          comment.body = "body#{index + 5} ##{index + 6} ##{index + 7}"
+          comment
+        end
 
         issue.set_issue_comment_from_github(issue_comments)
+        issue.create_and_delete_relation_issues
       end
 
       its(:count){should == 8}
-      it "journal" do
-        Journal.scoped.count.should == 8
-      end
       it "github_comment" do
-        subject.each_with_index do |issue_comment, index|
+        (0..3).each do |index|
+          issue_comment = subject[index]
           issue_comment.issue_comment_number.should == index.to_s
           issue_comment.github_issue.should == issue
           issue_comment.journal.notes.should == "body#{index + 1}"
+        end
+        (4..7).each do |index|
+          issue_comment = subject[index]
+          issue_comment.issue_comment_number.should == index.to_s
+          issue_comment.github_issue.should == issue
+          issue_comment.journal.notes.should == "body#{index + 1} ##{index + 2} ##{index + 3}"
+        end
+
+      end
+
+      it "github_relation" do
+        issue_relations = IssueRelation.all
+        issue_relations.count.should == 4
+
+        issue_relations.each_with_index do |issue_relation, index|
+          issue_relation.issue_from.should == issue.issue
+          issue_relation.issue_to.should == GithubIssue.where(issue_number: (index + 6).to_s).first.issue
         end
       end
     end

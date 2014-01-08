@@ -9,8 +9,6 @@ class GithubProject < ActiveRecord::Base
   def get_from_github(login, password)
     github_relation = Github::Relation.new(login, password)
 
-    GithubUser.create_users(github_relation.users(self.organization))
-
     list_issues = github_relation.issues(self.organization, self.project_name)
 
     updated_issues = GithubIssue.create_issues(self.project, list_issues)
